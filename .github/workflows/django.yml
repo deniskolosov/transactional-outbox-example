@@ -11,6 +11,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      SECRET_KEY: very_secret
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
