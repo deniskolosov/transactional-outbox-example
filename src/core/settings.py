@@ -14,12 +14,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEBUG = env.bool("DEBUG", default=False)
 ENVIRONMENT = env('ENVIRONMENT', default='Local')
-env_file = os.getenv("DJANGO_ENV_FILE", os.path.join(BASE_DIR, "core/.env"))
+
+env_file = os.getenv("DJANGO_ENV_FILE", Path(BASE_DIR) / "core" / ".env")
 
 # Read the environment variables from the selected file
 environ.Env.read_env(env_file)
 
-print(f"Using environment file: {env_file}")
 SECRET_KEY = env("SECRET_KEY", default="v3rys3cr3tk3y")
 
 ALLOWED_HOSTS = ["*"]
@@ -71,7 +71,7 @@ DATABASES = {
 }
 
 CLICKHOUSE_HOST = env('CLICKHOUSE_HOST', default='clickhouse')
-CLICKHOUSE_PORT = env('CLICKHOUSE_HOST', default=8123)
+CLICKHOUSE_PORT = env('CLICKHOUSE_PORT', default=8123)
 CLICKHOUSE_USER = os.getenv('CLICKHOUSE_USER', default='')
 CLICKHOUSE_PASSWORD = os.getenv('CLICKHOUSE_PASSWORD', default='')
 CLICKHOUSE_SCHEMA = os.getenv('CLICKHOUSE_SCHEMA', default='default')

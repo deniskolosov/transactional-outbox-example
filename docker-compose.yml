@@ -14,6 +14,8 @@ services:
       - app_static_files:/srv/app/static:rw
       - app_media_files:/srv/app/media:rw
       - .:/srv/app
+    networks:
+      - default
 
   db:
     tty: true
@@ -29,6 +31,8 @@ services:
       DATABASE_NAME: test_database
     ports:
       - 5432:5432
+    networks:
+      - default
 
   redis:
     image: redis:6-alpine
@@ -43,6 +47,8 @@ services:
       - 8123:8123
     volumes:
       - ./docker/clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - default
 
 
 volumes:
