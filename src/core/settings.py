@@ -11,10 +11,13 @@ env = environ.Env(
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-environ.Env.read_env(os.path.join(BASE_DIR, "core/.env"))  # noqa: PTH118
 
 DEBUG = env.bool("DEBUG", default=False)
 ENVIRONMENT = env('ENVIRONMENT', default='Local')
+env_file = os.getenv("DJANGO_ENV_FILE", os.path.join(BASE_DIR, "core/.env"))
+
+# Read the environment variables from the selected file
+environ.Env.read_env(env_file)
 
 SECRET_KEY = env("SECRET_KEY")
 
