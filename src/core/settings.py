@@ -19,6 +19,7 @@ env_file = os.getenv("DJANGO_ENV_FILE", os.path.join(BASE_DIR, "core/.env"))
 # Read the environment variables from the selected file
 environ.Env.read_env(env_file)
 
+print(f"Using environment file: {env_file}")
 SECRET_KEY = env("SECRET_KEY", "v3rys3cr3tk3y")
 
 ALLOWED_HOSTS = ["*"]
@@ -177,7 +178,7 @@ SENTRY_SETTINGS = {
     "environment": env("SENTRY_CONFIG_ENVIRONMENT"),
 }
 
-if SENTRY_SETTINGS.get("dsn"):
+if SENTRY_SETTINGS.get("dsn") and not DEBUG:
     sentry_sdk.init(
         dsn=SENTRY_SETTINGS["dsn"],
         environment=SENTRY_SETTINGS["environment"],

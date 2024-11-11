@@ -1,3 +1,5 @@
+[![CI](https://github.com/deniskolosov/transactional-outbox-example/actions/workflows/django.yml/badge.svg)](https://github.com/deniskolosov/transactional-outbox-example/actions/workflows/django.yml)
+
 This is example of application of Transactional outbox pattern.
 
 ## Problem:

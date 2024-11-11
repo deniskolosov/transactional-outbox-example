@@ -24,9 +24,6 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
 
-    - name: Set up environment variables
-      run: echo "DJANGO_ENV_FILE=/srv/app/src/core/env.ci" >> $GITHUB_ENV
-
     - name: Build Docker image
       run: |
         docker build \
