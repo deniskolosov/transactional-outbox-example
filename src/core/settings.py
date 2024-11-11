@@ -19,7 +19,7 @@ env_file = os.getenv("DJANGO_ENV_FILE", os.path.join(BASE_DIR, "core/.env"))
 # Read the environment variables from the selected file
 environ.Env.read_env(env_file)
 
-SECRET_KEY = env("SECRET_KEY")
+SECRET_KEY = env("SECRET_KEY", "v3rys3cr3tk3y")
 
 ALLOWED_HOSTS = ["*"]
 
