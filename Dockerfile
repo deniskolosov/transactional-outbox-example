@@ -25,10 +25,13 @@ RUN apt-get -qq update \
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
-COPY src/core/env.ci /srv/app/src/core/
+COPY src/core/.env.ci /srv/app/src/core/
 
 COPY . .
 
 WORKDIR /srv/app/src/
+
+ARG DJANGO_ENV_FILE
+ENV DJANGO_ENV_FILE=$DJANGO_ENV_FILE
 
 RUN python manage.py collectstatic --noinput
