@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Build Docker image
+      run: |
+        docker build \
+          --build-arg PYTHON_IMAGE_BASE=python:3.13-bullseye \
+          -t myapp:latest .
+
+    - name: Run tests
+      run: |
+        docker run --rm myapp:latest \
+          make test
+
+    - name: Collect static files
+      run: |
+        docker run --rm myapp:latest \
+          python manage.py collectstatic --noinput
