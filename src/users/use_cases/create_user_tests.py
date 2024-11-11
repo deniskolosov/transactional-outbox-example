@@ -1,11 +1,17 @@
+import json
 import uuid
 from collections.abc import Generator
-from unittest.mock import ANY
+from typing import Any
+from unittest.mock import ANY, patch
 
 import pytest
 from clickhouse_connect.driver import Client
 from django.conf import settings
+from django.db import IntegrityError, transaction
 
+from core.event_log_client import EventLogClient
+from users.models import EventOutbox, EventType, User
+from users.tasks import prepare_clickhouse_record, process_event_outbox
 from users.use_cases import CreateUser, CreateUserRequest, UserCreated
 
 pytestmark = [pytest.mark.django_db]
@@ -44,7 +50,6 @@ def test_emails_are_unique(f_use_case: CreateUser) -> None:
     assert response.result is None
     assert response.error == 'User with this email already exists'
 
-
 def test_event_log_entry_published(
     f_use_case: CreateUser,
     f_ch_client: Client,
@@ -66,3 +71,85 @@ def test_event_log_entry_published(
             1,
         ),
     ]
+
+
+def test_create_user_success(create_user_request: CreateUserRequest,
+                             user_context: dict[str, str]) -> None:
+    use_case = CreateUser()
+    _ = use_case.execute(create_user_request)
+    outbox_record = EventOutbox.objects.first()
+    assert outbox_record.event_type == EventType.USER_CREATED
+    assert outbox_record.event_context == user_context
+
+def test_create_user_atomicity(user_context: dict[str, str]) -> None:
+    with patch('users.use_cases.create_user.EventOutbox.objects.create') as mock_outbox_create:
+        request = CreateUserRequest(
+            last_name=user_context['last_name'],
+            email=user_context['email'],
+            first_name=user_context['first_name'],
+        )
+
+        create_user_use_case = CreateUser()
+
+        mock_outbox_create.side_effect = IntegrityError('Simulated failure in outbox entry creation')
+
+        with pytest.raises(IntegrityError):
+            with transaction.atomic():
+                create_user_use_case._execute(request)
+
+        assert not User.objects.filter(email=user_context['email']).exists()
+        assert not EventOutbox.objects.exists()
+
+def test_process_event_outbox_success(user_context: dict[str, str]) -> None:
+    event = EventOutbox.objects.create(
+        event_type=EventType.USER_CREATED,
+        environment='test',
+        event_context=user_context,
+        metadata_version=1,
+        processed=False,
+    )
+    process_event_outbox()
+
+    event.refresh_from_db()
+    assert event.processed, "The outbox entry should be marked as processed."
+
+def test_process_event_outbox_handles_exceptions(user_context: dict[str, str]) -> None:
+    event = EventOutbox.objects.create(
+        event_type=EventType.USER_CREATED,
+        environment='test',
+        event_context=user_context,
+        metadata_version=1,
+        processed=False,
+    )
+
+    with patch('users.tasks.batch_insert_into_clickhouse') as mock_batch_insert:
+        mock_batch_insert.side_effect = Exception('Simulated failure in batch insertion')
+
+        process_event_outbox()
+
+        event.refresh_from_db()
+        assert not event.processed, "The outbox entry should not be marked as processed."
+
+def test_batch_insert_into_clickhouse(user_context: dict[str, str]) -> None:
+    test_env = 'test'
+    _ = EventOutbox.objects.create(
+        event_type=EventType.USER_CREATED,
+        environment=test_env,
+        event_context=user_context,
+        metadata_version=1,
+        processed=False,
+    )
+
+    process_event_outbox()
+
+    with EventLogClient.init() as client:
+        query = f"SELECT event_context FROM {settings.CLICKHOUSE_EVENT_LOG_TABLE_NAME}"  # noqa: S608 potential SQL injection! Ignoring as this is toy example
+        result = client.query(query)
+
+
+    assert json.loads(result[0][0]) == user_context
+
+def test_prepare_clickhouse_record(user_context: dict[str, str], event: dict[str, Any]) -> None:
+    result = prepare_clickhouse_record(event)
+    assert result == UserCreated(**user_context)
+

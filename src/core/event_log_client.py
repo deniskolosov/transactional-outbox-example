@@ -1,5 +1,5 @@
 import re
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from typing import Any
 
@@ -8,6 +8,7 @@ import structlog
 from clickhouse_connect.driver.exceptions import DatabaseError
 from django.conf import settings
 from django.utils import timezone
+from sentry_sdk import start_transaction
 
 from core.base_model import Model
 
@@ -46,17 +47,22 @@ class EventLogClient:
 
     def insert(
         self,
-        data: list[Model],
+        data: Sequence[Model],
+        chunk_size: int = 1000,
     ) -> None:
-        try:
-            self._client.insert(
-                data=self._convert_data(data),
-                column_names=EVENT_LOG_COLUMNS,
-                database=settings.CLICKHOUSE_SCHEMA,
-                table=settings.CLICKHOUSE_EVENT_LOG_TABLE_NAME,
-            )
-        except DatabaseError as e:
-            logger.error('unable to insert data to clickhouse', error=str(e))
+        with start_transaction(op="task", name="Insert into Clickhouse"):
+            try:
+                for i in range(0, len(data), chunk_size):
+                    chunk = data[i:i + chunk_size]
+                    self._client.insert(
+                        data=self._convert_data(chunk),
+                        column_names=EVENT_LOG_COLUMNS,
+                        database=settings.CLICKHOUSE_SCHEMA,
+                        table=settings.CLICKHOUSE_EVENT_LOG_TABLE_NAME,
+                    )
+            except DatabaseError as e:
+                logger.error('unable to insert data to clickhouse', error=str(e))
+
 
     def query(self, query: str) -> Any:  # noqa: ANN401
         logger.debug('executing clickhouse query', query=query)

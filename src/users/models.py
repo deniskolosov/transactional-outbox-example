@@ -23,3 +23,19 @@ class User(TimeStampedModel, AbstractBaseUser):
             return f'{self.first_name} {self.last_name}'
 
         return self.email
+
+class EventType(models.TextChoices):
+    USER_CREATED = 'UserCreated', 'User Created'
+    USER_UPDATED = 'UserUpdated', 'User Updated'
+
+class EventOutbox(models.Model):
+    id = models.AutoField(primary_key=True)
+    event_type = models.CharField(
+        max_length=50,
+        choices=EventType.choices,
+    )
+    event_date_time = models.DateTimeField(auto_now_add=True)
+    environment = models.CharField(max_length=255)
+    event_context = models.JSONField()
+    metadata_version = models.BigIntegerField()
+    processed = models.BooleanField(default=False)

@@ -174,13 +174,9 @@ SENTRY_SETTINGS = {
     "environment": env("SENTRY_CONFIG_ENVIRONMENT"),
 }
 
-if SENTRY_SETTINGS.get("dsn") and not DEBUG:
+if SENTRY_SETTINGS.get("dsn"):
     sentry_sdk.init(
         dsn=SENTRY_SETTINGS["dsn"],
         environment=SENTRY_SETTINGS["environment"],
-        integrations=[
-            sentry_sdk.DjangoIntegration(),
-            sentry_sdk.CeleryIntegration(),
-        ],
-        default_integrations=False,
+        traces_sample_rate=1.0,
     )
