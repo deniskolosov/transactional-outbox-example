@@ -1,6 +1,6 @@
 [![CI](https://github.com/deniskolosov/transactional-outbox-example/actions/workflows/django.yml/badge.svg)](https://github.com/deniskolosov/transactional-outbox-example/actions/workflows/django.yml)
 
-This is example of application of Transactional outbox pattern.
+This is an example of application of Transactional outbox pattern.
 
 ## Problem:
 The application sends event logs for analysis using a column-based Clickhouse database and a One Big Table (OBT) architecture with specific columns. Current challenges include missed logs due to lack of transactionality, poor UX from network errors, and inefficiency with large numbers of small inserts. We aim to create a new write mechanism to address these challenges.
