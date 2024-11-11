@@ -30,6 +30,11 @@ jobs:
           --build-arg PYTHON_IMAGE_BASE=python:3.13-bullseye \
           -t myapp:latest .
 
+    - name: Run linter
+      run: |
+        docker run --rm myapp:latest \
+          make lint
+
     - name: Run tests
       run: |
         docker run --rm myapp:latest \
