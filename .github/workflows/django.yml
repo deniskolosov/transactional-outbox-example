@@ -27,6 +27,7 @@ jobs:
     - name: Build Docker image
       run: |
         docker build \
+          --build-arg DJANGO_ENV_FILE=/srv/app/src/core/env.ci \
           --build-arg PYTHON_IMAGE_BASE=python:3.13-bullseye \
           -t myapp:latest .
 
