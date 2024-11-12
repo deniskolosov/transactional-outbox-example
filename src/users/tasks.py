@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Any
 
@@ -5,6 +6,7 @@ import structlog
 from celery import shared_task
 from sentry_sdk import start_transaction
 
+from core.base_model import Model
 from core.event_log_client import EventLogClient
 from users.use_cases import UserCreated
 
@@ -12,15 +14,31 @@ from .models import EventOutbox, EventType
 
 logger = structlog.get_logger(__name__)
 
-def prepare_clickhouse_record(event: dict[str, Any]) -> UserCreated:
-    event_context = event.get("event_context", {})
-    logger.debug('Preparing Clickhouse record for event: %s', event)
-    if event.get('event_type') == EventType.USER_CREATED:
+class EventRecordPreparer(ABC):
+    @abstractmethod
+    def prepare_record(self, event_context: dict[str, Any]) -> Model:
+        pass
+
+# Implement specific classes for each event type
+class UserCreatedPreparer(EventRecordPreparer):
+    def prepare_record(self, event_context: dict[str, str]) -> UserCreated:
         return UserCreated(
-            email=event_context.get('email'),
-            first_name=event_context.get('first_name'),
-            last_name=event_context.get('last_name'),
+            email=event_context['email'],
+            first_name=event_context['first_name'],
+            last_name=event_context['last_name'],
         )
+
+def get_event_preparer(event_type: str) -> EventRecordPreparer:
+    if event_type == EventType.USER_CREATED:
+        return UserCreatedPreparer()
+    raise ValueError(f"Unsupported event type: {event_type}")
+
+def prepare_clickhouse_record(event: dict[str, Any]) -> Model:
+    event_context = event.get("event_context", {})
+    event_type = event["event_type"]
+    logger.debug('Preparing Clickhouse record for event: %s', event)
+    preparer = get_event_preparer(event_type)
+    return preparer.prepare_record(event_context)
 
 def batch_insert_into_clickhouse(events: Sequence[dict[str, Any]], chunk_size: int = 1000) -> None:
     with start_transaction(op="task", name="Batch Insert Into Clickhouse"):
