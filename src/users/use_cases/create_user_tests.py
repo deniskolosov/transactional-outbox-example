@@ -7,7 +7,7 @@ from unittest.mock import ANY, patch
 import pytest
 from clickhouse_connect.driver import Client
 from django.conf import settings
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError
 
 from core.event_log_client import EventLogClient
 from users.models import EventOutbox, EventType, User
@@ -60,6 +60,7 @@ def test_event_log_entry_published(
     )
 
     f_use_case.execute(request)
+    process_event_outbox()
     log = f_ch_client.query("SELECT * FROM default.event_log WHERE event_type = 'user_created'")
 
     assert log.result_rows == [
@@ -94,8 +95,7 @@ def test_create_user_atomicity(user_context: dict[str, str]) -> None:
         mock_outbox_create.side_effect = IntegrityError('Simulated failure in outbox entry creation')
 
         with pytest.raises(IntegrityError):
-            with transaction.atomic():
-                create_user_use_case._execute(request)
+            create_user_use_case._execute(request)
 
         assert not User.objects.filter(email=user_context['email']).exists()
         assert not EventOutbox.objects.exists()
