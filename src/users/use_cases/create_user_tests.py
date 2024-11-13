@@ -10,8 +10,9 @@ from django.conf import settings
 from django.db import IntegrityError
 
 from core.event_log_client import EventLogClient
+from users.clickhouse import prepare_clickhouse_record
 from users.models import EventOutbox, EventType, User
-from users.tasks import prepare_clickhouse_record, process_event_outbox
+from users.tasks import process_event_outbox
 from users.use_cases import CreateUser, CreateUserRequest, UserCreated
 
 pytestmark = [pytest.mark.django_db]
