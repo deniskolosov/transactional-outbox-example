@@ -41,6 +41,38 @@ services:
     ports:
       - 6379:6379
 
+  celery:
+    build: .
+    restart: always
+    command: celery -A core.celery  worker --loglevel=info
+    volumes:
+      - .:/srv/app
+    depends_on:
+      - redis
+      - app
+    networks:
+      - default
+    env_file:
+      - src/core/.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=core.settings
+
+  celery-beat:
+    build: .
+    restart: always
+    command: celery -A core.celery beat --loglevel=info
+    volumes:
+      - .:/srv/app
+    depends_on:
+      - redis
+      - app
+    networks:
+      - default
+    env_file:
+      - src/core/.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=core.settings
+
   clickhouse:
     image: "clickhouse/clickhouse-server:23.8.2.7-alpine"
     ports:

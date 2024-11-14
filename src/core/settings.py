@@ -15,10 +15,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = env.bool("DEBUG", default=False)
 ENVIRONMENT = env('ENVIRONMENT', default='Local')
 
-env_file = os.getenv("DJANGO_ENV_FILE", Path(BASE_DIR) / "core" / ".env")
 
 # Read the environment variables from the selected file
-environ.Env.read_env(env_file)
+environ.Env.read_env(env_file="/srv/app/src/core/.env")
 
 SECRET_KEY = env("SECRET_KEY", default="v3rys3cr3tk3y")
 
