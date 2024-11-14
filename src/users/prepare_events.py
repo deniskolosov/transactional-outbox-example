@@ -23,6 +23,7 @@ class UserCreatedPreparer(EventRecordPreparer):
             last_name=event_context['last_name'],
         )
 
+# Extension point for future events
 def get_event_preparer(event_type: str) -> EventRecordPreparer:
     if event_type == EventType.USER_CREATED:
         return UserCreatedPreparer()
